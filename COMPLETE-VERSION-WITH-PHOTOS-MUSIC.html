@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>For You 💫</title>
+    <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@0,300;0,400;1,300;1,400&family=Space+Mono:wght@400;700&family=Bebas+Neue&display=swap" rel="stylesheet">
+    <style>
+        /* [KEEPING ALL YOUR CSS - NOT CHANGING ANYTHING] */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Newsreader', serif; background: #000; color: #fff; overflow: hidden; height: 100vh; position: relative; }
+        .audio-control { position: fixed; top: 20px; right: 20px; z-index: 10000; background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.2); border-radius: 50%; width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 20px; transition: all 0.3s ease; }
+        .audio-control:hover { background: rgba(255,107,157,0.3); transform: scale(1.1); }
+        .scene { position: absolute; width: 100%; height: 100vh; display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 1.5s ease; }
+        .scene.active { opacity: 1; pointer-events: all; }
+        .phone-lockscreen { width: 380px; height: 760px; background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); border-radius: 50px; border: 12px solid #0f0f0f; box-shadow: 0 40px 120px rgba(0,0,0,0.9); position: relative; overflow: hidden; }
+        .dynamic-island { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); width: 120px; height: 35px; background: #000; border-radius: 20px; z-index: 100; transition: all 0.5s ease; }
+        .dynamic-island.expanded { width: 200px; height: 60px; }
+        .island-content { display: flex; align-items: center; justify-content: center; height: 100%; gap: 10px; opacity: 0; transition: opacity 0.3s ease; }
+        .dynamic-island.expanded .island-content { opacity: 1; }
+        .lockscreen-wallpaper { position: absolute; width: 100%; height: 100%; background: radial-gradient(circle at 30% 20%, rgba(255,107,157,0.4) 0%, transparent 50%), radial-gradient(circle at 70% 80%, rgba(192,108,132,0.3) 0%, transparent 50%), radial-gradient(circle at 50% 50%, rgba(138,43,226,0.2) 0%, transparent 70%); animation: wallpaperShift 10s ease infinite; }
+        @keyframes wallpaperShift { 0%, 100% { filter: hue-rotate(0deg); } 50% { filter: hue-rotate(30deg); } }
+        .lockscreen-time { position: absolute; top: 140px; width: 100%; text-align: center; font-size: 90px; font-weight: 300; font-family: 'Space Mono', monospace; text-shadow: 0 0 20px rgba(255,107,157,0.5); }
+        .lockscreen-date { position: absolute; top: 240px; width: 100%; text-align: center; font-size: 20px; opacity: 0.8; }
+        .notification { position: absolute; bottom: 180px; left: 20px; right: 20px; background: rgba(255,255,255,0.15); backdrop-filter: blur(30px); border-radius: 25px; padding: 25px; border: 1px solid rgba(255,255,255,0.3); animation: slideUpGlow 0.6s ease 2s forwards; opacity: 0; transform: translateY(20px); }
+        @keyframes slideUpGlow { to { opacity: 1; transform: translateY(0); box-shadow: 0 0 40px rgba(255,107,157,0.6); } }
+        .notification-header { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+        .notification-icon { width: 35px; height: 35px; background: linear-gradient(135deg, #ff6b9d, #c06c84); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 18px; animation: heartBeatIcon 1.5s infinite; }
+        @keyframes heartBeatIcon { 0%, 100% { transform: scale(1); } 10%, 30% { transform: scale(1.2); } 20%, 40% { transform: scale(1); } }
+        .notification-app { font-size: 16px; font-weight: 600; }
+        .notification-time { margin-left: auto; font-size: 12px; opacity: 0.6; }
+        .notification-text { font-size: 16px; line-height: 1.6; }
+        .swipe-up { position: absolute; bottom: 40px; width: 100%; text-align: center; font-size: 13px; opacity: 0.6; animation: bounce 2s ease 3s infinite; }
+        @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-15px); } }
+        .pixel-canvas { width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 40px; }
+        .pixel-title { font-size: 38px; text-align: center; font-style: italic; margin-bottom: 20px; background: linear-gradient(45deg, #ff6b9d, #c06c84, #ff6b9d); background-size: 200% 200%; -webkit-background-clip: text; -webkit-text-fill-color: transparent; animation: gradientFlow 3s ease infinite; }
+        @keyframes gradientFlow { 0%, 100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
+        .pixel-grid { display: grid; grid-template-columns: repeat(20, 22px); gap: 3px; padding: 25px; background: rgba(255,255,255,0.05); border-radius: 15px; border: 2px solid rgba(255,107,157,0.3); box-shadow: 0 0 40px rgba(255,107,157,0.2); }
+        .pixel { width: 22px; height: 22px; background: #1a1a1a; transition: all 0.3s ease; cursor: pointer; border-radius: 3px; }
+        .pixel:hover { background: #2a2a2a; transform: scale(1.1); }
+        .pixel.revealed { background: linear-gradient(135deg, #ff6b9d, #f67280); box-shadow: 0 0 15px #ff6b9d, inset 0 0 10px rgba(255,255,255,0.3); animation: pixelPop 0.5s ease; }
+        @keyframes pixelPop { 0% { transform: scale(0); } 50% { transform: scale(1.3); } 100% { transform: scale(1); } }
+        .pixel-progress { font-family: 'Space Mono', monospace; font-size: 18px; color: #ff6b9d; }
+        .pixel-hint { font-size: 16px; opacity: 0.7; text-align: center; }
+        .code-editor { width: 90%; max-width: 900px; height: 85vh; background: #1e1e1e; border-radius: 15px; overflow: hidden; box-shadow: 0 30px 100px rgba(0,0,0,0.9); border: 1px solid #333; }
+        .editor-header { background: linear-gradient(to bottom, #2d2d2d, #252525); padding: 12px 20px; display: flex; align-items: center; gap: 8px; border-bottom: 1px solid #181818; }
+        .editor-dot { width: 13px; height: 13px; border-radius: 50%; cursor: pointer; transition: all 0.2s ease; }
+        .editor-dot:hover { transform: scale(1.2); }
+        .editor-dot.red { background: #ff5f56; }
+        .editor-dot.yellow { background: #ffbd2e; }
+        .editor-dot.green { background: #27c93f; }
+        .editor-title { margin-left: 20px; font-size: 14px; opacity: 0.7; font-family: 'Space Mono', monospace; }
+        .editor-tabs { margin-left: auto; display: flex; gap: 5px; }
+        .editor-tab { padding: 4px 12px; background: rgba(255,255,255,0.05); border-radius: 5px; font-size: 12px; font-family: 'Space Mono', monospace; }
+        .editor-content { padding: 35px; font-family: 'Space Mono', monospace; font-size: 15px; line-height: 2; height: calc(100% - 55px); overflow-y: auto; }
+        .code-line { opacity: 0; transform: translateX(-20px); position: relative; padding-left: 50px; }
+        .code-line::before { content: attr(data-line); position: absolute; left: 0; color: #4a4a4a; width: 40px; text-align: right; }
+        .code-line.show { animation: codeLine 0.3s ease forwards; }
+        @keyframes codeLine { to { opacity: 1; transform: translateX(0); } }
+        .keyword { color: #c586c0; font-weight: bold; }
+        .function { color: #dcdcaa; }
+        .string { color: #ce9178; }
+        .comment { color: #6a9955; font-style: italic; }
+        .number { color: #b5cea8; }
+        .variable { color: #9cdcfe; }
+        .operator { color: #d4d4d4; }
+        .cube-scene { width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; perspective: 1200px; }
+        .cube-title { font-size: 48px; margin-bottom: 60px; text-align: center; font-style: italic; background: linear-gradient(45deg, #ff6b9d, #c06c84, #f67280); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .cube-container { width: 350px; height: 350px; position: relative; transform-style: preserve-3d; animation: rotateCube 25s infinite linear; filter: drop-shadow(0 0 50px rgba(255,107,157,0.5)); }
+        @keyframes rotateCube { 0% { transform: rotateX(0deg) rotateY(0deg); } 100% { transform: rotateX(360deg) rotateY(360deg); } }
+        .cube-face { position: absolute; width: 350px; height: 350px; border: 3px solid #ff6b9d; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 70px; background: linear-gradient(135deg, rgba(255,107,157,0.15), rgba(192,108,132,0.15)); backdrop-filter: blur(15px); box-shadow: inset 0 0 30px rgba(255,107,157,0.2); }
+        .cube-face-text { font-size: 20px; margin-top: 15px; font-family: 'Newsreader', serif; font-style: italic; }
+        .cube-face.front { transform: translateZ(175px); }
+        .cube-face.back { transform: rotateY(180deg) translateZ(175px); }
+        .cube-face.right { transform: rotateY(90deg) translateZ(175px); }
+        .cube-face.left { transform: rotateY(-90deg) translateZ(175px); }
+        .cube-face.top { transform: rotateX(90deg) translateZ(175px); }
+        .cube-face.bottom { transform: rotateX(-90deg) translateZ(175px); }
+        .terminal { width: 90%; max-width: 800px; height: 75vh; background: #0c0c0c; border-radius: 15px; overflow: hidden; box-shadow: 0 30px 100px rgba(0,255,0,0.4); border: 1px solid #0f0; }
+        .terminal-header { background: linear-gradient(to bottom, #1a1a1a, #0f0f0f); padding: 12px 20px; display: flex; align-items: center; gap: 8px; border-bottom: 1px solid #0f0; }
+        .terminal-content { padding: 25px; font-family: 'Space Mono', monospace; font-size: 15px; height: calc(100% - 55px); overflow-y: auto; color: #0f0; text-shadow: 0 0 5px #0f0; }
+        .terminal-line { margin-bottom: 8px; opacity: 0; }
+        .terminal-line.show { animation: terminalLine 0.1s ease forwards; }
+        @keyframes terminalLine { to { opacity: 1; } }
+        .terminal-line.error { color: #ff5555; text-shadow: 0 0 5px #ff5555; }
+        .terminal-line.success { color: #50fa7b; text-shadow: 0 0 5px #50fa7b; }
+        .terminal-cursor { display: inline-block; width: 10px; height: 18px; background: #0f0; margin-left: 5px; animation: blink 1s infinite; }
+        @keyframes blink { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0; } }
+        .record-scene { width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 60px; }
+        .record-title { font-size: 52px; text-align: center; font-style: italic; background: linear-gradient(45deg, #ff6b9d, #c06c84); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .record-player { position: relative; width: 450px; height: 450px; background: rgba(30,30,30,0.8); border-radius: 20px; padding: 25px; box-shadow: 0 20px 80px rgba(0,0,0,0.8); border: 2px solid rgba(255,107,157,0.3); }
+        .vinyl-record { width: 100%; height: 100%; border-radius: 50%; background: radial-gradient(circle at center, #0a0a0a 0%, #0a0a0a 30%, #ff6b9d 30%, #ff6b9d 32%, #0a0a0a 32%, #0a0a0a 100%), repeating-radial-gradient(circle at center, transparent 0, transparent 2px, rgba(255,255,255,0.03) 2px, rgba(255,255,255,0.03) 4px); position: relative; box-shadow: inset 0 0 50px rgba(0,0,0,0.8), 0 0 30px rgba(255,107,157,0.3); animation: spin 4s linear infinite; }
+        .vinyl-record.paused { animation-play-state: paused; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+        .vinyl-center { position: absolute; width: 120px; height: 120px; background: radial-gradient(circle, #1a1a1a 0%, #0a0a0a 100%); border-radius: 50%; top: 50%; left: 50%; transform: translate(-50%, -50%); display: flex; align-items: center; justify-content: center; font-size: 14px; text-align: center; padding: 15px; line-height: 1.3; border: 2px solid #333; box-shadow: 0 0 20px rgba(0,0,0,0.8); }
+        .record-arm { position: absolute; right: 30px; top: 30px; width: 220px; height: 5px; background: linear-gradient(to right, #555, #888, #555); transform-origin: right center; transform: rotate(-35deg); transition: transform 1.5s cubic-bezier(0.4, 0, 0.2, 1); border-radius: 3px; box-shadow: 0 2px 10px rgba(0,0,0,0.5); }
+        .record-arm::before { content: ''; position: absolute; right: 20px; top: 50%; transform: translateY(-50%); width: 30px; height: 30px; background: radial-gradient(circle, #999, #555); border-radius: 50%; box-shadow: 0 2px 10px rgba(0,0,0,0.5); }
+        .record-arm::after { content: ''; position: absolute; left: 0; top: 50%; transform: translateY(-50%); width: 25px; height: 25px; background: #888; border-radius: 50%; }
+        .vinyl-record.playing ~ .record-arm { transform: rotate(-8deg); }
+        .song-lyrics { max-width: 600px; text-align: center; font-size: 28px; line-height: 2; font-style: italic; opacity: 0; transition: opacity 1.5s ease; }
+        .song-lyrics.show { opacity: 1; }
+        .equalizer { display: flex; gap: 5px; justify-content: center; margin-top: 20px; }
+        .eq-bar { width: 6px; background: #ff6b9d; border-radius: 3px; animation: equalize 0.8s ease-in-out infinite; }
+        .eq-bar:nth-child(1) { height: 20px; animation-delay: 0s; }
+        .eq-bar:nth-child(2) { height: 30px; animation-delay: 0.1s; }
+        .eq-bar:nth-child(3) { height: 40px; animation-delay: 0.2s; }
+        .eq-bar:nth-child(4) { height: 25px; animation-delay: 0.3s; }
+        .eq-bar:nth-child(5) { height: 35px; animation-delay: 0.4s; }
+        @keyframes equalize { 0%, 100% { transform: scaleY(1); } 50% { transform: scaleY(1.5); } }
+        .polaroid-scene { width: 100%; height: 100%; position: relative; overflow: hidden; background: radial-gradient(circle at center, rgba(255,107,157,0.1) 0%, transparent 70%); }
+        .polaroid-title { position: absolute; top: 60px; width: 100%; text-align: center; font-size: 48px; font-style: italic; z-index: 10; text-shadow: 0 0 20px rgba(0,0,0,0.8); }
+        .polaroid { position: absolute; width: 220px; background: #fff; padding: 18px; padding-bottom: 70px; box-shadow: 0 15px 50px rgba(0,0,0,0.6); cursor: pointer; transition: all 0.4s ease; }
+        .polaroid:hover { transform: scale(1.15) !important; z-index: 100; box-shadow: 0 20px 80px rgba(255,107,157,0.5); }
+        .polaroid-image { width: 100%; height: 220px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center; font-size: 70px; position: relative; overflow: hidden; background-size: cover; background-position: center; }
+        .polaroid-image::before { content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent); animation: shine 3s infinite; }
+        @keyframes shine { 100% { left: 100%; } }
+        .polaroid-caption { margin-top: 18px; text-align: center; font-size: 16px; color: #333; font-family: 'Newsreader', serif; font-weight: 600; }
+        .starfield-scene { width: 100%; height: 100%; position: relative; overflow: hidden; background: radial-gradient(ellipse at bottom, #1B2735 0%, #090A0F 100%); }
+        .starfield { position: absolute; width: 100%; height: 100%; }
+        .shooting-star { position: absolute; width: 2px; height: 2px; background: #fff; border-radius: 50%; box-shadow: 0 0 15px #fff; }
+        .star-layer { position: absolute; width: 100%; height: 100%; }
+        .star-small { animation: twinkle 3s infinite; }
+        .star-medium { animation: twinkle 4s infinite; }
+        .star-large { animation: twinkle 5s infinite; }
+        @keyframes twinkle { 0%, 100% { opacity: 0.3; } 50% { opacity: 1; } }
+        .final-content { position: relative; z-index: 10; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 40px; }
+        .final-question { font-size: 72px; margin-bottom: 50px; opacity: 0; transform: scale(0.5); animation: finalAppear 1.2s cubic-bezier(0.34, 1.56, 0.64, 1) 1s forwards; text-shadow: 0 0 30px rgba(255,107,157,0.8); }
+        @keyframes finalAppear { to { opacity: 1; transform: scale(1); } }
+        .final-text { max-width: 800px; font-size: 26px; line-height: 2; margin-bottom: 60px; opacity: 0; animation: fadeInUp 1s ease 2s forwards; }
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(40px); } to { opacity: 1; transform: translateY(0); } }
+        .final-buttons { display: flex; gap: 40px; opacity: 0; animation: fadeInUp 1s ease 3s forwards; }
+        .final-btn { padding: 25px 70px; font-size: 22px; font-family: 'Newsreader', serif; background: transparent; color: #fff; border: 3px solid #ff6b9d; border-radius: 60px; cursor: pointer; transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); position: relative; overflow: hidden; }
+        .final-btn::before { content: ''; position: absolute; top: 50%; left: 50%; width: 0; height: 0; border-radius: 50%; background: #ff6b9d; transition: all 0.5s ease; transform: translate(-50%, -50%); z-index: -1; }
+        .final-btn:hover::before { width: 300%; height: 300%; }
+        .final-btn:hover { transform: translateY(-8px); box-shadow: 0 15px 50px rgba(255,107,157,0.6); }
+        .final-btn.yes { background: linear-gradient(135deg, #ff6b9d, #f67280); border: none; box-shadow: 0 10px 40px rgba(255,107,157,0.5); }
+        .final-btn.yes:hover { transform: translateY(-8px) scale(1.05); }
+        .nav-hint { position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%); font-size: 13px; opacity: 0.5; z-index: 1000; font-family: 'Space Mono', monospace; text-transform: uppercase; letter-spacing: 3px; padding: 12px 30px; background: rgba(255,255,255,0.05); border-radius: 30px; border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(10px); }
+        .scene-counter { position: fixed; top: 20px; left: 20px; font-family: 'Space Mono', monospace; font-size: 14px; opacity: 0.6; z-index: 1000; background: rgba(255,255,255,0.05); padding: 10px 20px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(10px); }
+        .loader { position: fixed; top: 0; left: 0; width: 100%; height: 100vh; background: #000; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 99999; transition: opacity 1s ease; }
+        .loader.hidden { opacity: 0; pointer-events: none; }
+        .loader-heart { font-size: 80px; animation: loaderBeat 1s infinite; }
+        @keyframes loaderBeat { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.2); } }
+        .loader-text { margin-top: 30px; font-size: 20px; font-family: 'Space Mono', monospace; opacity: 0.7; }
+        @media (max-width: 768px) {
+            .phone-lockscreen { width: 320px; height: 640px; }
+            .lockscreen-time { font-size: 70px; top: 120px; }
+            .pixel-grid { grid-template-columns: repeat(15, 18px); }
+            .pixel { width: 18px; height: 18px; }
+            .code-editor { width: 95%; height: 75vh; }
+            .editor-content { font-size: 12px; padding: 20px; }
+            .cube-container { width: 250px; height: 250px; }
+            .cube-face { width: 250px; height: 250px; font-size: 50px; }
+            .cube-face.front { transform: translateZ(125px); }
+            .cube-face.back { transform: rotateY(180deg) translateZ(125px); }
+            .cube-face.right { transform: rotateY(90deg) translateZ(125px); }
+            .cube-face.left { transform: rotateY(-90deg) translateZ(125px); }
+            .cube-face.top { transform: rotateX(90deg) translateZ(125px); }
+            .cube-face.bottom { transform: rotateX(-90deg) translateZ(125px); }
+            .record-player { width: 340px; height: 340px; }
+            .final-question { font-size: 48px; }
+            .final-text { font-size: 20px; }
+            .final-buttons { flex-direction: column; gap: 20px; }
+            .final-btn { padding: 20px 50px; font-size: 18px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="loader" id="loader">
+        <div class="loader-heart">💖</div>
+        <div class="loader-text">Creating something special...</div>
+    </div>
+
+    <div class="audio-control" id="audioControl" title="Toggle Music">🔇</div>
+    
+    <!-- ⭐⭐⭐ ADD YOUR MUSIC HERE ⭐⭐⭐ -->
+    <audio id="bgMusic" loop>
+        <!-- OPTION 1: Use a local file (put music.mp3 in same folder as this HTML) -->
+        <source src="love.mp3" type="audio/mpeg">
+        
+        <!-- OPTION 2: Use a URL -->
+        <!-- <source src="https://example.com/romantic-song.mp3" type="audio/mpeg"> -->
+    </audio>
+
+    <div class="scene-counter" id="sceneCounter">Scene 1 / 8</div>
+
+    <!-- Scenes 1-6 remain exactly the same -->
+    <div class="scene active" id="scene1">
+        <div class="phone-lockscreen">
+            <div class="dynamic-island" id="dynamicIsland">
+                <div class="island-content">💕 New Message</div>
+            </div>
+            <div class="lockscreen-wallpaper"></div>
+            <div class="lockscreen-time" id="lockTime">11:11</div>
+            <div class="lockscreen-date" id="lockDate">Friday, February 14</div>
+            <div class="notification">
+                <div class="notification-header">
+                    <div class="notification-icon">💕</div>
+                    <div class="notification-app">From Someone Special</div>
+                    <div class="notification-time">now</div>
+                </div>
+                <div class="notification-text">
+                    "I created an entire universe just for you... Tap to unlock your Valentine's surprise 💫"
+                </div>
+            </div>
+            <div class="swipe-up">▲ Tap anywhere to unlock</div>
+        </div>
+    </div>
+
+    <div class="scene" id="scene2">
+        <div class="pixel-canvas">
+            <div class="pixel-title">Click the pixels to reveal what's hidden...</div>
+            <div class="pixel-grid" id="pixelGrid"></div>
+            <div class="pixel-progress" id="pixelProgress">0% Complete</div>
+            <div class="pixel-hint">Hint: It's something we both feel ❤️</div>
+        </div>
+    </div>
+
+    <div class="scene" id="scene3">
+        <div class="code-editor">
+            <div class="editor-header">
+                <div class="editor-dot red"></div>
+                <div class="editor-dot yellow"></div>
+                <div class="editor-dot green"></div>
+                <div class="editor-title">💕 love_letter.js</div>
+                <div class="editor-tabs">
+                    <div class="editor-tab">main.js</div>
+                </div>
+            </div>
+            <div class="editor-content" id="codeContent"></div>
+        </div>
+    </div>
+
+    <div class="scene" id="scene4">
+        <div class="cube-scene">
+            <div class="cube-title">Every Side of Me Loves Every Side of You</div>
+            <div class="cube-container">
+                <div class="cube-face front">😊<div class="cube-face-text">Happy</div></div>
+                <div class="cube-face back">😍<div class="cube-face-text">In Love</div></div>
+                <div class="cube-face right">🥰<div class="cube-face-text">Adoring</div></div>
+                <div class="cube-face left">😘<div class="cube-face-text">Romantic</div></div>
+                <div class="cube-face top">💕<div class="cube-face-text">Caring</div></div>
+                <div class="cube-face bottom">❤️<div class="cube-face-text">Forever</div></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="scene" id="scene5">
+        <div class="terminal">
+            <div class="terminal-header">
+                <div class="editor-dot red"></div>
+                <div class="editor-dot yellow"></div>
+                <div class="editor-dot green"></div>
+                <div class="editor-title">terminal — bash — 80×24</div>
+            </div>
+            <div class="terminal-content" id="terminalContent"></div>
+        </div>
+    </div>
+
+    <div class="scene" id="scene6">
+        <div class="record-scene">
+            <div class="record-title">Our Love Song</div>
+            <div class="record-player">
+                <div class="vinyl-record playing">
+                    <div class="vinyl-center">NOW<br>PLAYING<br>❤️</div>
+                </div>
+                <div class="record-arm"></div>
+            </div>
+            <div class="song-lyrics show">
+                "Distance means so little<br>
+                when you mean so much"
+            </div>
+            <div class="equalizer">
+                <div class="eq-bar"></div>
+                <div class="eq-bar"></div>
+                <div class="eq-bar"></div>
+                <div class="eq-bar"></div>
+                <div class="eq-bar"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scene 7: Polaroids WITH YOUR PHOTOS -->
+    <div class="scene" id="scene7">
+        <div class="polaroid-scene" id="polaroidScene">
+            <div class="polaroid-title">Our Memories Together 📸</div>
+        </div>
+    </div>
+
+    <div class="scene" id="scene8">
+        <div class="starfield-scene">
+            <div class="starfield" id="starfield"></div>
+            <div class="final-content">
+                <div class="final-question">Will You Be My Valentine? 💫</div>
+                <div class="final-text">
+                    I created this entire universe just to ask you one question.<br>
+                    Every pixel, every line of code, every spinning cube, every star...<br>
+                    they all exist to tell you how much you mean to me.
+                </div>
+                <div class="final-buttons">
+                    <button class="final-btn yes" onclick="celebrate()">Yes! Forever ❤️</button>
+                    <button class="final-btn" onclick="sadResponse()">Maybe later...</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="nav-hint" id="navHint">Click anywhere to continue →</div>
+
+    <script>
+        let currentScene = 1;
+        const totalScenes = 8;
+        let musicPlaying = false;
+
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                document.getElementById('loader').classList.add('hidden');
+                setTimeout(() => {
+                    document.getElementById('dynamicIsland').classList.add('expanded');
+                }, 1000);
+            }, 2000);
+        });
+
+        const bgMusic = document.getElementById('bgMusic');
+        const audioControl = document.getElementById('audioControl');
+        
+        audioControl.addEventListener('click', () => {
+            if (musicPlaying) {
+                bgMusic.pause();
+                audioControl.textContent = '🔇';
+                musicPlaying = false;
+            } else {
+                bgMusic.play();
+                audioControl.textContent = '🔊';
+                musicPlaying = true;
+            }
+        });
+
+        function updateTime() {
+            const now = new Date();
+            const time = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+            const date = now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+            document.getElementById('lockTime').textContent = time;
+            document.getElementById('lockDate').textContent = date;
+        }
+        updateTime();
+        setInterval(updateTime, 1000);
+
+        function nextScene() {
+            if (currentScene < totalScenes) {
+                document.getElementById(`scene${currentScene}`).classList.remove('active');
+                currentScene++;
+                document.getElementById(`scene${currentScene}`).classList.add('active');
+                document.getElementById('sceneCounter').textContent = `Scene ${currentScene} / ${totalScenes}`;
+                
+                if (currentScene === 2) initPixelArt();
+                if (currentScene === 3) setTimeout(typeCode, 500);
+                if (currentScene === 5) setTimeout(runTerminal, 500);
+                if (currentScene === 7) createPolaroids();
+                if (currentScene === 8) {
+                    createStarfield();
+                    document.getElementById('navHint').style.opacity = '0';
+                    document.getElementById('sceneCounter').style.opacity = '0';
+                }
+            }
+        }
+
+        document.addEventListener('click', (e) => {
+            if (currentScene < totalScenes && !e.target.closest('.final-btn') && !e.target.closest('.audio-control')) {
+                nextScene();
+            }
+        });
+
+        function initPixelArt() {
+            const grid = document.getElementById('pixelGrid');
+            const pattern = [
+                [0,1,1,0,0,0,1,1,0,0,0,1,1,0,0,0,1,1,0,0],
+                [1,1,1,1,0,1,1,1,1,0,1,1,1,1,0,1,1,1,1,0],
+                [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0],
+                [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0],
+                [0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0],
+                [0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0],
+                [0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0],
+                [0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0],
+                [0,0,0,0,0,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0],
+                [0,0,0,0,0,0,1,1,1,1,1,1,1,0,0,0,0,0,0,0],
+                [0,0,0,0,0,0,0,1,1,1,1,1,0,0,0,0,0,0,0,0],
+                [0,0,0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,0,0,0],
+                [0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0]
+            ];
+            let revealedCount = 0;
+            const totalPixels = pattern.flat().filter(p => p === 1).length;
+            pattern.forEach((row) => {
+                row.forEach((isHeart) => {
+                    const pixel = document.createElement('div');
+                    pixel.className = 'pixel';
+                    if (isHeart) {
+                        pixel.addEventListener('click', function() {
+                            if (!this.classList.contains('revealed')) {
+                                this.classList.add('revealed');
+                                revealedCount++;
+                                const percentage = Math.floor((revealedCount / totalPixels) * 100);
+                                document.getElementById('pixelProgress').textContent = `${percentage}% Complete`;
+                                if (revealedCount === totalPixels) setTimeout(nextScene, 2000);
+                            }
+                        });
+                    }
+                    grid.appendChild(pixel);
+                });
+            });
+        }
+
+        function typeCode() {
+            const codeLines = [
+                '<span class="comment">// A love letter written in code ❤️</span>',
+                '',
+                '<span class="keyword">import</span> { <span class="variable">heart</span>, <span class="variable">soul</span>, <span class="variable">mind</span> } <span class="keyword">from</span> <span class="string">\'./me\'</span>;',
+                '<span class="keyword">import</span> { <span class="variable">everything</span> } <span class="keyword">from</span> <span class="string">\'./you\'</span>;',
+                '',
+                '<span class="keyword">const</span> <span class="variable">myFeelings</span> <span class="operator">=</span> {',
+                '  <span class="variable">for</span>: <span class="string">"the most amazing person in my life"</span>,',
+                '  <span class="variable">distance</span>: <span class="string">"means nothing"</span>,',
+                '  <span class="variable">missingYou</span>: <span class="number">Infinity</span>,',
+                '  <span class="variable">lovingYou</span>: <span class="number">Infinity</span> <span class="operator">*</span> <span class="number">2</span>,',
+                '  <span class="variable">thinkingAboutYou</span>: <span class="string">"24/7"</span>,',
+                '};',
+                '',
+                '<span class="keyword">class</span> <span class="function">OurRelationship</span> {',
+                '  <span class="keyword">constructor</span>() {',
+                '    <span class="keyword">this</span>.<span class="variable">distance</span> <span class="operator">=</span> <span class="number">500</span>; <span class="comment">// kilometers</span>',
+                '    <span class="keyword">this</span>.<span class="variable">emotionalDistance</span> <span class="operator">=</span> <span class="number">0</span>; <span class="comment">// ❤️</span>',
+                '    <span class="keyword">this</span>.<span class="variable">love</span> <span class="operator">=</span> <span class="number">Infinity</span>;',
+                '  }',
+                '',
+                '  <span class="keyword">async</span> <span class="function">everyDay</span>() {',
+                '    <span class="keyword">while</span>(<span class="variable">true</span>) {',
+                '      <span class="keyword">await</span> <span class="keyword">this</span>.<span class="function">thinkAbout</span>(<span class="variable">you</span>);',
+                '      <span class="keyword">await</span> <span class="keyword">this</span>.<span class="function">missYou</span>();',
+                '      <span class="keyword">await</span> <span class="keyword">this</span>.<span class="function">sendLove</span>();',
+                '      <span class="keyword">await</span> <span class="keyword">this</span>.<span class="function">dreamAboutUs</span>();',
+                '    }',
+                '  }',
+                '}',
+                '',
+                '<span class="comment">// Execute the most important function</span>',
+                '<span class="keyword">const</span> <span class="variable">us</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="function">OurRelationship</span>();',
+                '<span class="variable">us</span>.<span class="function">everyDay</span>();',
+                '',
+                '<span class="comment">// The question that matters most</span>',
+                '<span class="keyword">const</span> <span class="variable">answer</span> <span class="operator">=</span> <span class="keyword">await</span> <span class="function">ask</span>(<span class="string">"Will you be my Valentine?"</span>);',
+                '',
+                '<span class="keyword">if</span> (<span class="variable">answer</span> <span class="operator">===</span> <span class="string">"yes"</span>) {',
+                '  <span class="function">celebrateForever</span>(); <span class="comment">// 🎉💖✨</span>',
+                '  <span class="keyword">return</span> <span class="string">"Happily ever after"</span>;',
+                '}'
+            ];
+            const content = document.getElementById('codeContent');
+            codeLines.forEach((line, i) => {
+                setTimeout(() => {
+                    const div = document.createElement('div');
+                    div.className = 'code-line';
+                    div.setAttribute('data-line', i + 1);
+                    div.innerHTML = line;
+                    content.appendChild(div);
+                    setTimeout(() => div.classList.add('show'), 50);
+                    content.scrollTop = content.scrollHeight;
+                }, i * 150);
+            });
+        }
+
+        function runTerminal() {
+            const commands = [
+                '$ ssh heart@yourname.love',
+                'Connecting to heart server...',
+                '<span class="success">✓ Connection established.</span>',
+                '',
+                '$ WoW Connection to strong',
+                'someone deeply in love',
+                '',
+                '$ pwd',
+                '/home/heart/feelings/for_you',
+                '',
+                '$ ls -la memories/',
+                'drwxr-xr-x  first_message.txt',
+                'drwxr-xr-x  late_night_calls.mp4',
+                'drwxr-xr-x  your_beautiful_smile.jpg',
+                'drwxr-xr-x  inside_jokes.txt',
+                'drwxr-xr-x  shared_dreams.doc',
+                'drwxr-xr-x  future_together.pdf',
+                '',
+                '$ cat feelings.txt',
+                'Loading emotional data...',
+                '',
+                'Every morning I wake up thinking about you.',
+                'Every night I go to sleep missing you.',
+                'Every moment in between, you\'re on my mind.',
+                'Distance is just a number on a screen.',
+                'Love is what makes it all worthwhile.',
+                '',
+                '$ calculate --distance --emotional',
+                'Physical distance: 500 km',
+                'Emotional distance: 0 km',
+                '<span class="success">Our hearts are right next to each other ❤️</span>',
+                '',
+                '$ send_message --to=you --priority=urgent',
+                'Composing message...',
+                'Subject: My Valentine',
+                'Message: Will you be mine?',
+                '<span class="success">✓ Message sent successfully</span>',
+                '',
+                '$ echo "I love you"',
+                'I love you',
+                '',
+                '$ ▊'
+            ];
+            const content = document.getElementById('terminalContent');
+            commands.forEach((cmd, i) => {
+                setTimeout(() => {
+                    const div = document.createElement('div');
+                    div.className = 'terminal-line';
+                    div.innerHTML = cmd;
+                    content.appendChild(div);
+                    setTimeout(() => div.classList.add('show'), 50);
+                    content.scrollTop = content.scrollHeight;
+                }, i * 250);
+            });
+        }
+
+        // ⭐⭐⭐ THIS IS WHERE YOU ADD YOUR PHOTOS ⭐⭐⭐
+        function createPolaroids() {
+            const container = document.getElementById('polaroidScene');
+            
+            // CUSTOMIZE THIS ARRAY WITH YOUR PHOTOS!
+            const memories = [
+                { 
+                    image: 'photo1.jpg',  // ⭐ PUT YOUR PHOTO FILENAME HERE
+                    caption: 'Our first photo together' 
+                },
+                { 
+                    image: 'photo2.jpg',  // ⭐ PUT YOUR PHOTO FILENAME HERE
+                    caption: 'That amazing day' 
+                },
+                { 
+                    image: 'photo3.jpg',  // ⭐ PUT YOUR PHOTO FILENAME HERE
+                    caption: 'Your beautiful smile' 
+                },
+                { 
+                    image: 'photo4.jpg',  // ⭐ PUT YOUR PHOTO FILENAME HERE
+                    caption: 'Our video calls' 
+                },
+                { 
+                    image: 'photo5.jpg',  // ⭐ PUT YOUR PHOTO FILENAME HERE
+                    caption: 'Missing you always' 
+                },
+                { 
+                    image: 'photo6.jpg',  // ⭐ PUT YOUR PHOTO FILENAME HERE
+                    caption: 'Can\'t wait to see you' 
+                },
+                { 
+                    image: 'photo7.jpg',  // ⭐ PUT YOUR PHOTO FILENAME HERE
+                    caption: 'Forever together' 
+                },
+                { 
+                    image: 'photo8.jpg',  // ⭐ PUT YOUR PHOTO FILENAME HERE
+                    caption: 'My Valentine ❤️' 
+                }
+                // You can add more photos by copying this pattern!
+            ];
+
+            // This creates the falling animation
+            memories.forEach((memory, i) => {
+                setTimeout(() => {
+                    const polaroid = document.createElement('div');
+                    polaroid.className = 'polaroid';
+                    
+                    const randomX = Math.random() * (window.innerWidth - 280) + 30;
+                    const randomY = -350;
+                    const randomRotate = Math.random() * 50 - 25;
+                    const finalY = Math.random() * (window.innerHeight - 500) + 150;
+                    
+                    polaroid.style.left = randomX + 'px';
+                    polaroid.style.top = randomY + 'px';
+                    polaroid.style.transform = `rotate(${randomRotate}deg)`;
+                    
+                    polaroid.innerHTML = `
+                        <div class="polaroid-image" style="background-image: url('${memory.image}');"></div>
+                        <div class="polaroid-caption">${memory.caption}</div>
+                    `;
+                    
+                    container.appendChild(polaroid);
+                    
+                    setTimeout(() => {
+                        polaroid.style.transition = 'all 1.2s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+                        polaroid.style.top = finalY + 'px';
+                    }, 100);
+                }, i * 300);
+            });
+        }
+
+        function createStarfield() {
+            const starfield = document.getElementById('starfield');
+            const layers = [
+                { count: 100, size: 1, class: 'star-small' },
+                { count: 50, size: 2, class: 'star-medium' },
+                { count: 25, size: 3, class: 'star-large' }
+            ];
+            layers.forEach(layer => {
+                const layerDiv = document.createElement('div');
+                layerDiv.className = 'star-layer';
+                for (let i = 0; i < layer.count; i++) {
+                    const star = document.createElement('div');
+                    star.className = `shooting-star ${layer.class}`;
+                    star.style.left = Math.random() * 100 + '%';
+                    star.style.top = Math.random() * 100 + '%';
+                    star.style.width = layer.size + 'px';
+                    star.style.height = layer.size + 'px';
+                    star.style.animationDelay = Math.random() * 5 + 's';
+                    layerDiv.appendChild(star);
+                }
+                starfield.appendChild(layerDiv);
+            });
+            setInterval(() => {
+                const star = document.createElement('div');
+                star.className = 'shooting-star';
+                star.style.left = Math.random() * 100 + '%';
+                star.style.top = Math.random() * 50 + '%';
+                star.style.width = '150px';
+                star.style.height = '2px';
+                star.style.background = 'linear-gradient(to right, transparent, #fff, transparent)';
+                starfield.appendChild(star);
+                const startX = parseFloat(star.style.left);
+                star.style.transition = 'all 1.5s ease-out';
+                setTimeout(() => {
+                    star.style.left = (startX - 40) + '%';
+                    star.style.top = (parseFloat(star.style.top) + 40) + '%';
+                    star.style.opacity = '0';
+                }, 50);
+                setTimeout(() => star.remove(), 1600);
+            }, 1500);
+        }
+
+        function celebrate() {
+            const final = document.querySelector('#scene8 .final-content');
+            final.innerHTML = `
+                <div class="final-question" style="animation: finalAppear 0.5s ease forwards; font-size: 90px;">
+                    YES! 🎉✨💖
+                </div>
+                <div class="final-text" style="animation: fadeInUp 0.5s ease 0.5s forwards; font-size: 28px;">
+                    You just made me the happiest person in the entire universe!<br><br>
+                    Every mile between us, every timezone we cross,<br>
+                    every "good morning" and "goodnight" -<br>
+                    they all mean the world to me.<br><br>
+                    I can't wait for the day when we don't have to count miles anymore.<br>
+                    Until then, you're always in my heart.<br><br>
+                    <span style="font-size: 32px; color: #ff6b9d;">Happy Valentine's Day, my love! ❤️</span>
+                </div>
+            `;
+            for (let i = 0; i < 150; i++) {
+                setTimeout(() => {
+                    const heart = document.createElement('div');
+                    const emojis = ['❤️', '💕', '💖', '💝', '💗', '💘', '🌹', '✨', '💫', '⭐'];
+                    heart.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+                    heart.style.position = 'fixed';
+                    heart.style.left = Math.random() * 100 + '%';
+                    heart.style.top = '-100px';
+                    heart.style.fontSize = Math.random() * 40 + 25 + 'px';
+                    heart.style.zIndex = '10000';
+                    heart.style.pointerEvents = 'none';
+                    document.body.appendChild(heart);
+                    const fallDuration = Math.random() * 4 + 3;
+                    const sway = Math.random() * 200 - 100;
+                    heart.style.transition = `all ${fallDuration}s ease-out`;
+                    setTimeout(() => {
+                        heart.style.top = '120vh';
+                        heart.style.left = `calc(${heart.style.left} + ${sway}px)`;
+                        heart.style.transform = `rotate(${Math.random() * 720 - 360}deg)`;
+                        heart.style.opacity = '0';
+                    }, 50);
+                    setTimeout(() => heart.remove(), fallDuration * 1000);
+                }, i * 40);
+            }
+            for (let i = 0; i < 5; i++) {
+                setTimeout(() => {
+                    const x = Math.random() * window.innerWidth;
+                    const y = Math.random() * window.innerHeight * 0.7;
+                    createFirework(x, y);
+                }, i * 800);
+            }
+        }
+
+        function createFirework(x, y) {
+            const colors = ['#ff6b9d', '#f67280', '#c06c84', '#ffd700', '#ff69b4'];
+            for (let i = 0; i < 30; i++) {
+                const particle = document.createElement('div');
+                particle.style.position = 'fixed';
+                particle.style.left = x + 'px';
+                particle.style.top = y + 'px';
+                particle.style.width = '8px';
+                particle.style.height = '8px';
+                particle.style.borderRadius = '50%';
+                particle.style.background = colors[Math.floor(Math.random() * colors.length)];
+                particle.style.zIndex = '9999';
+                particle.style.pointerEvents = 'none';
+                document.body.appendChild(particle);
+                const angle = (Math.PI * 2 * i) / 30;
+                const velocity = 150 + Math.random() * 100;
+                const vx = Math.cos(angle) * velocity;
+                const vy = Math.sin(angle) * velocity;
+                particle.style.transition = 'all 1.5s cubic-bezier(0, 0.9, 0.3, 1)';
+                setTimeout(() => {
+                    particle.style.left = (x + vx) + 'px';
+                    particle.style.top = (y + vy) + 'px';
+                    particle.style.opacity = '0';
+                }, 50);
+                setTimeout(() => particle.remove(), 1600);
+            }
+        }
+
+        function sadResponse() {
+            alert("That's okay... I'll wait for you forever ❤️\n\nThis Valentine's surprise will always be here whenever you're ready.");
+        }
+    </script>
+</body>
+</html>
